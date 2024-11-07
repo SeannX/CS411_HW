@@ -1,11 +1,10 @@
 import pytest
 import requests
 
-from music_collection.utils.random_utils import get_random
+from meal_max.utils.random_utils import get_random
 
-
-RANDOM_NUMBER = 42
-NUM_SONGS = 100
+# Constants for testing
+RANDOM_FLOAT = 0.66
 
 @pytest.fixture
 def mock_random_org(mocker):
@@ -13,38 +12,55 @@ def mock_random_org(mocker):
     # requests.get returns an object, which we have replaced with a mock object
     mock_response = mocker.Mock()
     # We are giving that object a text attribute
-    mock_response.text = f"{RANDOM_NUMBER}"
+    mock_response.text = f"{RANDOM_FLOAT}"
     mocker.patch("requests.get", return_value=mock_response)
     return mock_response
 
-
 def test_get_random(mock_random_org):
-    """Test retrieving a random number from random.org."""
-    result = get_random(NUM_SONGS)
-
+    """
+    Test retrieving a random number from random.org.
+    """
+    # Call the get_random function
+    result = get_random()
+    
     # Assert that the result is the mocked random number
-    assert result == RANDOM_NUMBER, f"Expected random number {RANDOM_NUMBER}, but got {result}"
+    assert result == RANDOM_FLOAT, f"Expected random number {RANDOM_FLOAT}, but got {result}"
 
-    # Ensure that the correct URL was called
-    requests.get.assert_called_once_with("https://www.random.org/integers/?num=1&min=1&max=100&col=1&base=10&format=plain&rnd=new", timeout=5)
-
-def test_get_random_request_failure(mocker):
-    """Simulate  a request failure."""
-    mocker.patch("requests.get", side_effect=requests.exceptions.RequestException("Connection error"))
-
-    with pytest.raises(RuntimeError, match="Request to random.org failed: Connection error"):
-        get_random(NUM_SONGS)
+    # Verify that the correct URL was called
+    requests.get.assert_called_once_with(
+        "https://www.random.org/decimal-fractions/?num=1&dec=2&col=1&format=plain&rnd=new", 
+        timeout=5
+    )
 
 def test_get_random_timeout(mocker):
-    """Simulate  a timeout."""
+    """
+    Test handling of a timeout exception.
+    """
+    # Patch requests.get to raise a Timeout exception
     mocker.patch("requests.get", side_effect=requests.exceptions.Timeout)
-
+    
+    # Assert that a RuntimeError is raised with the correct message
     with pytest.raises(RuntimeError, match="Request to random.org timed out."):
-        get_random(NUM_SONGS)
+        get_random()
+
+def test_get_random_request_failure(mocker):
+    """
+    Test handling of a general request failure.
+    """
+    # Patch requests.get to raise a RequestException
+    mocker.patch("requests.get", side_effect=requests.exceptions.RequestException("Connection error"))
+    
+    # Assert that a RuntimeError is raised with the correct message
+    with pytest.raises(RuntimeError, match="Request to random.org failed: Connection error"):
+        get_random()
 
 def test_get_random_invalid_response(mock_random_org):
-    """Simulate  an invalid response (non-digit)."""
+    """
+    Test handling of an invalid response from random.org.
+    """
+    # Set the mock response text to an invalid value
     mock_random_org.text = "invalid_response"
-
+    
+    # Assert that a ValueError is raised with the correct message
     with pytest.raises(ValueError, match="Invalid response from random.org: invalid_response"):
-        get_random(NUM_SONGS)
+        get_random()
