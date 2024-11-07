@@ -89,7 +89,7 @@ def test_get_battle_score_high(battle_model, sample_meal2):
     assert score == expect
 
 ##################################################
-# Combatant Management Test Cases
+# Combatant Retrieve/Remove Management Test Cases
 ##################################################
 
 def test_get_combatants(battle_model, sample_meal1, sample_meal2):
