@@ -53,14 +53,13 @@ def test_battle_not_enough_combatants(battle_model):
 
 def test_battle_winner(battle_model, sample_meal1, sample_meal2, mocker):
     """Test that a battle correctly determines a winner."""
-    # Mock get_random to control randomness
     mocker.patch("meal_max.utils.random_utils.get_random", return_value=0.1)
     
     battle_model.prep_combatant(sample_meal1)
     battle_model.prep_combatant(sample_meal2)
     
     winner = battle_model.battle()
-    # Winner will always be spaghetti when the value return by .get_random is set to 0.1
+    # Winner will always be Spaghetti when the value return by .get_random is set to 0.1
     assert winner == "Spaghetti", f"Expected 'Spaghetti', but got {winner}"
     # Check if loser is removed from combatant list
     assert len(battle_model.combatants) == 1
@@ -72,21 +71,21 @@ def test_battle_winner(battle_model, sample_meal1, sample_meal2, mocker):
 ##################################################
 
 def test_get_battle_score_low(battle_model, sample_meal3):
-    """Test calculating battle score for a meal with 'MED' difficulty."""
+    """Test calculating battle score for a meal with LOW difficulty."""
     score = battle_model.get_battle_score(sample_meal3)
-    expect = (sample_meal3.price * len("American")) - 3  # Difficulty "MED" has modifier 3
+    expect = (sample_meal3.price * len("American")) - 3  # Difficulty "LOW" has modifier val of 3
     assert score == expect
 
 def test_get_battle_score_med(battle_model, sample_meal1):
-    """Test calculating battle score for a meal with 'MED' difficulty."""
+    """Test calculating battle score for a meal with MED difficulty."""
     score = battle_model.get_battle_score(sample_meal1)
-    expect= (sample_meal1.price * len("Italian")) - 2  # Difficulty "MED" has modifier 2
+    expect= (sample_meal1.price * len("Italian")) - 2  # Difficulty "MED" has modifier val of 2
     assert score == expect
 
 def test_get_battle_score_high(battle_model, sample_meal2):
-    """Test calculating battle score for a meal with 'HIGH' difficulty."""
+    """Test calculating battle score for a meal with HIGH difficulty."""
     score = battle_model.get_battle_score(sample_meal2)
-    expect = (sample_meal2.price * len("Japanese")) - 1  # Difficulty "HIGH" has modifier 1
+    expect = (sample_meal2.price * len("Japanese")) - 1  # Difficulty "HIGH" has modifier val of 1
     assert score == expect
 
 ##################################################
@@ -94,7 +93,7 @@ def test_get_battle_score_high(battle_model, sample_meal2):
 ##################################################
 
 def test_get_combatants(battle_model, sample_meal1, sample_meal2):
-    """Test retrieving the list of combatants."""
+    """Test of getting the list of combatants."""
     battle_model.prep_combatant(sample_meal1)
     battle_model.prep_combatant(sample_meal2)
     combatants = battle_model.get_combatants()
@@ -103,7 +102,7 @@ def test_get_combatants(battle_model, sample_meal1, sample_meal2):
     assert combatants[1].meal == "Sushi"
 
 def test_clear_combatants(battle_model, sample_meal1, sample_meal2):
-    """Test clearing combatants and if an empty list is retrieved."""
+    """Test clearing combatants and if an empty list is generated."""
     battle_model.prep_combatant(sample_meal1)
     battle_model.prep_combatant(sample_meal2)
     battle_model.clear_combatants()
