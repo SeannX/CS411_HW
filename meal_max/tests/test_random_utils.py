@@ -4,7 +4,7 @@ import requests
 from meal_max.utils.random_utils import get_random
 
 # Constants for testing
-RANDOM_FLOAT = 0.66
+RANDOM_FLOAT = 0.42
 
 @pytest.fixture
 def mock_random_org(mocker):
