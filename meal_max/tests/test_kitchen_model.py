@@ -1,8 +1,21 @@
 from contextlib import contextmanager
 import re
 import sqlite3
+
 import pytest
-from meal_max.models.kitchen_model import Meal, create_meal, clear_meals, delete_meal, get_leaderboard, get_meal_by_id, get_meal_by_name, update_meal_stats
+
+from meal_max.models.kitchen_model import (
+    Meal, 
+    create_meal, 
+    clear_meals, 
+    delete_meal, 
+    get_leaderboard, 
+    get_meal_by_id, 
+    get_meal_by_name, 
+    update_meal_stats
+)
+def normalize_whitespace(sql_query: str) -> str:
+    return re.sub(r'\s+', ' ', sql_query).strip()
 
 # Mocking the database connection for tests
 @pytest.fixture
@@ -19,11 +32,11 @@ def mock_cursor(mocker):
     def mock_get_db_connection():
         yield mock_conn
 
-    mocker.patch("meal_max.utils.sql_utils.get_db_connection", mock_get_db_connection)
+    mocker.patch("meal_max.models.kitchen_model.get_db_connection", mock_get_db_connection)
+    
     return mock_cursor
 
-def normalize_whitespace(sql_query: str) -> str:
-    return re.sub(r'\s+', ' ', sql_query).strip()
+
 
 ######################################################
 #
@@ -33,9 +46,17 @@ def normalize_whitespace(sql_query: str) -> str:
 def test_create_meal(mock_cursor):
     """Test adding a new meal to the meals table."""
     create_meal("Pizza", "Italian", 12.0, "LOW")
+    
+    # Expected SQL query and parameters
     expected_query = "INSERT INTO meals (meal, cuisine, price, difficulty) VALUES (?, ?, ?, ?)"
+    expected_params = ("Pizza", "Italian", 12.0, "LOW")
+
+    # Assert the query and parameters match expectations
     actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
+    actual_params = mock_cursor.execute.call_args[0][1]
+
     assert actual_query == expected_query, "The SQL query did not match the expected structure."
+    assert actual_params == expected_params, f"Expected {expected_params}, but got {actual_params}."
 
 
 def test_create_meal_duplicate(mock_cursor):
@@ -180,7 +201,7 @@ def test_get_deleted_meal_by_id(mock_cursor):
     #meal's deleted field set to TRUE
     mock_cursor.fetchone.return_value = (1, "Pizza", "Italian", 12.0, "LOW", True)
 
-    with pytest.raises(ValueError, match="Meal with ID 999 has been deleted"):
+    with pytest.raises(ValueError, match="Meal with ID 1 has been deleted"):
         get_meal_by_id(1)
 
 
@@ -210,7 +231,7 @@ def test_get_meal_by_name(mock_cursor):
     actual_arguments = mock_cursor.execute.call_args[0][1]
 
     # Assert that the SQL query was executed with the correct arguments
-    expected_arguments = (1,)
+    expected_arguments = ("Pizza",)
     assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
 
@@ -279,9 +300,7 @@ def test_update_meal_stats_win(mock_cursor):
     update_meal_stats(meal_id, "win")
 
     # Normalize the expected SQL query
-    expected_query = normalize_whitespace("""
-        "UPDATE meals SET battles = battles + 1, wins = wins + 1 WHERE id = ?"
-    """)
+    expected_query = normalize_whitespace("UPDATE meals SET battles = battles + 1, wins = wins + 1 WHERE id = ?")
 
     # Ensure the SQL query was executed correctly
     actual_query = normalize_whitespace(mock_cursor.execute.call_args_list[1][0][0])
@@ -305,12 +324,10 @@ def test_update_meal_stats_lose(mock_cursor):
 
     # Call the update_meal_stats function with a sample meal ID and winning the battle
     meal_id = 1
-    update_meal_stats(meal_id, "lose")
+    update_meal_stats(meal_id, "loss")
 
     # Normalize the expected SQL query
-    expected_query = normalize_whitespace("""
-        "UPDATE meals SET battles = battles + 1 WHERE id = ?"
-    """)
+    expected_query = normalize_whitespace("UPDATE meals SET battles = battles + 1 WHERE id = ?")
 
     # Ensure the SQL query was executed correctly
     actual_query = normalize_whitespace(mock_cursor.execute.call_args_list[1][0][0])
@@ -351,5 +368,5 @@ def test_update_meal_stats_invalid_result(mock_cursor):
     mock_cursor.fetchone.return_value = [False]
     meal_id = 1
 
-    with pytest.raises(ValueError, match="Meal with ID 1 has been deleted"):
+    with pytest.raises(ValueError, match="Invalid result: invalid result. Expected 'win' or 'loss'."):
         update_meal_stats(meal_id, "invalid result")
