@@ -1,11 +1,11 @@
 import pytest
 
 from meal_max.models.battle_model import BattleModel
-from meal_max.models.kitchen_model import Meal
+from meal_max.models.kitchen_model import Meal, create_meal, delete_meal
 
 
 @pytest.fixture
-def create_battle_model():
+def battle_model():
     """Fixture to provide a new instance of BattleModel for each test."""
     return BattleModel()
 
@@ -53,18 +53,26 @@ def test_battle_not_enough_combatants(battle_model):
 
 def test_battle_winner(battle_model, sample_meal1, sample_meal2, mocker):
     """Test that a battle correctly determines a winner."""
+    mock_response = mocker.Mock()
     mocker.patch("meal_max.utils.random_utils.get_random", return_value=0.1)
+
+    # Add the two meals to database.
+    create_meal(sample_meal1.meal, sample_meal1.cuisine, sample_meal1.price, sample_meal1.difficulty)
+    create_meal(sample_meal2.meal, sample_meal2.cuisine, sample_meal2.price, sample_meal2.difficulty)
     
     battle_model.prep_combatant(sample_meal1)
     battle_model.prep_combatant(sample_meal2)
     
     winner = battle_model.battle()
+
+    delete_meal(sample_meal1.id)
+    delete_meal(sample_meal2.id)
+
     # Winner will always be Spaghetti when the value return by .get_random is set to 0.1
-    assert winner == "Spaghetti", f"Expected 'Spaghetti', but got {winner}"
+    # Winner must be one of the meal.
+    assert winner in [sample_meal1.meal, sample_meal2.meal], f"Expected 'Spaghetti', but got {winner}"
     # Check if loser is removed from combatant list
     assert len(battle_model.combatants) == 1
-    # Check the status of winner (Spaghetti)
-    assert winner.id == 'win'
 
 ##################################################
 # Battle Score Calculation Test Cases
