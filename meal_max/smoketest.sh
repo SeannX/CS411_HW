@@ -54,6 +54,84 @@ check_db() {
 # Battle Management Smoketests
 ##################################################
 
+# start battle and check if success
+start_battle() {
+  echo "Initiating battle test..."
+  response=$(curl -s -X GET "$BASE_URL/battle")
+  
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Battle test passed: $response"
+  else
+    echo "Battle test failed: $response"
+    exit 1
+  fi
+}
+
+# Clear combatants
+clear_combatants() {
+  echo "Clearing combatants..."
+  response=$(curl -s -X POST "$BASE_URL/clear-combatants")
+
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Combatants cleared."
+  else
+    echo "Failed to clear combatants: $response"
+    exit 1
+  fi
+}
+
+# Function to get the combatants
+get_combatants() {
+  echo "Getting the combatants..."
+  response=$(curl -s -X GET "$BASE_URL/get-combatants")
+
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Combatants retrieved successfully: $response"
+  else
+    echo "Failed to get combatants: $response"
+    exit 1
+  fi
+}
+
+# Prepare a combatant
+prep_combatant() {
+  meal=$1
+  echo "Preparing combatant meal: $meal..."
+  response=$(curl -s -X POST "$BASE_URL/prep-combatant" \
+    -H "Content-Type: application/json" \
+    -d "{\"meal\": \"$meal\"}")
+
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Combatant prepared successfully: $response"
+  else
+    echo "Failed to prepare combatant: $response"
+    exit 1
+  fi
+}
+
+######################################################
+#
+# Leaderboard
+#
+######################################################
+
+# Function to get the song leaderboard sorted by wins
+get_meal_leaderboard() {
+  echo "Getting meal leaderboard sorted by wins..."
+
+  response=$(curl -s -X GET "$BASE_URL/leaderboard?sort=wins")
+  
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Meal leaderboard retrieved successfully (sorted by wins)."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Leaderboard JSON (sorted by wins):"
+      echo "$response" | jq .
+    fi
+  else
+    echo "Failed to get meal leaderboard (sorted by wins)."
+    exit 1
+  fi
+}
 
 ##################################################
 # Running Smoketests
@@ -64,5 +142,24 @@ echo "Running smoketests..."
 # Health checks
 check_health
 check_db
+
+# battle
+clear_combatants
+
+prep_combatant "Spaghetti"
+prep_combatant "Sushi"
+get_combatants
+clear_combatants
+
+prep_combatant "Spaghetti"
+prep_combatant "Sushi"
+get_combatants
+
+start_battle
+get_combatants
+
+clear_combatants
+
+get_meal_leaderboard
 
 echo "All tests passed successfully!"
