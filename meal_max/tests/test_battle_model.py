@@ -2,7 +2,7 @@ import pytest
 from contextlib import contextmanager
 
 from meal_max.models.battle_model import BattleModel
-from meal_max.models.kitchen_model import Meal, create_meal, delete_meal
+from meal_max.models.kitchen_model import Meal, create_meal, clear_meals
 
 
 @pytest.fixture
@@ -78,8 +78,12 @@ def test_battle_not_enough_combatants(battle_model):
     with pytest.raises(ValueError, match="Two combatants must be prepped for a battle."):
         battle_model.battle()
 
-def test_battle(battle_model, sample_meal1, sample_meal2, mock_update_meal_stats, mock_cursor):
-
+def test_battle(battle_model, sample_meal1, sample_meal2, mock_cursor):
+    # Simulating that both Meal exists and are not deleted
+    mock_cursor.fetchone.side_effect = [
+            [False],
+            [False]
+    ]
     # Add the two meals to database.
     create_meal(sample_meal1.meal, sample_meal1.cuisine, sample_meal1.price, sample_meal1.difficulty)
     create_meal(sample_meal2.meal, sample_meal2.cuisine, sample_meal2.price, sample_meal2.difficulty)
@@ -90,7 +94,7 @@ def test_battle(battle_model, sample_meal1, sample_meal2, mock_update_meal_stats
     winner = battle_model.battle()
 
     # Winner must be one of the meal.
-    assert winner in [sample_meal1.meal, sample_meal2.meal]
+    assert winner == sample_meal1.meal or winner == sample_meal2.meal
     # Check if loser is removed from combatant list
     assert len(battle_model.combatants) == 1
 
