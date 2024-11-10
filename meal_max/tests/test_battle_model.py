@@ -1,4 +1,5 @@
 import pytest
+from contextlib import contextmanager
 
 from meal_max.models.battle_model import BattleModel
 from meal_max.models.kitchen_model import Meal, create_meal, delete_meal
@@ -23,6 +24,32 @@ def sample_meal2():
 def sample_meal3():
     """Fixture to provide the second sample Meal object."""
     return Meal(id=3, meal="Hamburger", price=10.0, cuisine="American", difficulty="LOW")
+
+# Mocking the database connection for tests
+# Mocking the database connection for tests
+@pytest.fixture
+def mock_cursor(mocker):
+    mock_conn = mocker.Mock()
+    mock_cursor = mocker.Mock()
+
+    mock_conn.cursor.return_value = mock_cursor
+    mock_cursor.fetchone.return_value = None
+    mock_cursor.fetchall.return_value = []
+    mock_conn.commit.return_value = None
+
+    @contextmanager
+    def mock_get_db_connection():
+        yield mock_conn
+
+    mocker.patch("meal_max.models.kitchen_model.get_db_connection", mock_get_db_connection)
+    
+    return mock_cursor
+
+@pytest.fixture
+def mock_update_meal_stats(mocker):
+    """Mock the update_meal_stats function for testing purposes."""
+    return mocker.patch("meal_max.models.kitchen_model.update_meal_stats")
+
 
 
 ##################################################
@@ -51,10 +78,7 @@ def test_battle_not_enough_combatants(battle_model):
     with pytest.raises(ValueError, match="Two combatants must be prepped for a battle."):
         battle_model.battle()
 
-def test_battle_winner(battle_model, sample_meal1, sample_meal2, mocker):
-    """Test that a battle correctly determines a winner."""
-    mock_response = mocker.Mock()
-    mocker.patch("meal_max.utils.random_utils.get_random", return_value=0.1)
+def test_battle(battle_model, sample_meal1, sample_meal2, mock_update_meal_stats, mock_cursor):
 
     # Add the two meals to database.
     create_meal(sample_meal1.meal, sample_meal1.cuisine, sample_meal1.price, sample_meal1.difficulty)
@@ -65,12 +89,8 @@ def test_battle_winner(battle_model, sample_meal1, sample_meal2, mocker):
     
     winner = battle_model.battle()
 
-    delete_meal(sample_meal1.id)
-    delete_meal(sample_meal2.id)
-
-    # Winner will always be Spaghetti when the value return by .get_random is set to 0.1
     # Winner must be one of the meal.
-    assert winner in [sample_meal1.meal, sample_meal2.meal], f"Expected 'Spaghetti', but got {winner}"
+    assert winner in [sample_meal1.meal, sample_meal2.meal]
     # Check if loser is removed from combatant list
     assert len(battle_model.combatants) == 1
 
