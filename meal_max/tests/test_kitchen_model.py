@@ -51,7 +51,6 @@ def test_create_meal(mock_cursor):
     expected_query = "INSERT INTO meals (meal, cuisine, price, difficulty) VALUES (?, ?, ?, ?)"
     expected_params = ("Pizza", "Italian", 12.0, "LOW")
 
-    # Assert the query and parameters match expectations
     actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
     actual_params = mock_cursor.execute.call_args[0][1]
 
@@ -65,7 +64,6 @@ def test_create_meal_duplicate(mock_cursor):
     # Simulate that the database will raise an IntegrityError due to a duplicate entry
     mock_cursor.execute.side_effect = sqlite3.IntegrityError("UNIQUE constraint failed: meals.meal, meals.cuisince, meals.price, meals.difficulty")
 
-    # Expect the function to raise a ValueError with a specific message when handling the IntegrityError
     with pytest.raises(ValueError, match="Meal with name 'Pizza' already exists"):
         create_meal("Pizza", "Italian", 12.2, "LOW")
 
@@ -92,13 +90,10 @@ def test_clear_meals(mock_cursor, mocker):
     mocker.patch.dict('os.environ', {'SQL_CREATE_TABLE_PATH': 'sql/create_meals_table.sql'})
     mock_open = mocker.patch('builtins.open', mocker.mock_open(read_data="The body of the create statement"))
 
-    # Call the clear_database function
     clear_meals()
 
-    # Ensure the file was opened using the environment variable's path
     mock_open.assert_called_once_with('sql/create_meals_table.sql', 'r')
 
-    # Verify that the correct SQL script was executed
     mock_cursor.executescript.assert_called_once()
 
 
@@ -131,7 +126,6 @@ def test_delete_meal_bad_id(mock_cursor):
     # Simulate that no meal exists with the given ID
     mock_cursor.fetchone.return_value = None
 
-    # Expect a ValueError when attempting to delete a non-existent meal
     with pytest.raises(ValueError, match="Meal with ID 999 not found"):
         delete_meal(999)
 
@@ -142,7 +136,6 @@ def test_delete_meal_already_deleted(mock_cursor):
     # Simulate that the meal exists but is already marked as deleted
     mock_cursor.fetchone.return_value = ([True])
 
-    # Expect a ValueError when attempting to delete a meal that's already been deleted
     with pytest.raises(ValueError, match="Meal with ID 999 has been deleted"):
         delete_meal(999)
 
@@ -152,11 +145,6 @@ def test_delete_meal_already_deleted(mock_cursor):
 #    Get Meals, Leaderboard
 #
 ######################################################
-# Test retrieving leaderboard
-def test_get_leaderboard(mock_cursor):
-    """Test retrieving the leaderboard, sorted by wins or win percentage."""
-    
-
 
 # Test retrieving a meal by ID
 def test_get_meal_by_id(mock_cursor):
@@ -164,26 +152,19 @@ def test_get_meal_by_id(mock_cursor):
     # Simulate that the meal exists (id = 1)
     mock_cursor.fetchone.return_value = (1, "Pizza", "Italian", 12.0, "LOW", False)
 
-    # Call the function and check the result
     result = get_meal_by_id(1)
 
-    # Expected result based on the simulated fetchone return value
     expected_result = Meal(1, "Pizza", "Italian", 12.0, "LOW")
 
-    # Ensure the result matches the expected output
     assert result == expected_result, f"Expected {expected_result}, got {result}"
 
-    # Ensure the SQL query was executed correctly
     expected_query = normalize_whitespace("SELECT id, meal, cuisine, price, difficulty, deleted FROM meals WHERE id = ?")
     actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
 
-    # Assert that the SQL query was correct
     assert actual_query == expected_query, "The SQL query did not match the expected structure."
 
-    # Extract the arguments used in the SQL call
     actual_arguments = mock_cursor.execute.call_args[0][1]
 
-    # Assert that the SQL query was executed with the correct arguments
     expected_arguments = (1,)
     assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
@@ -192,7 +173,6 @@ def test_get_meal_by_id_bad_id(mock_cursor):
     # Simulate that no meal exists for the given ID
     mock_cursor.fetchone.return_value = None
 
-    # Expect a ValueError when the meal is not found
     with pytest.raises(ValueError, match="Meal with ID 999 not found"):
         get_meal_by_id(999)
 
@@ -211,26 +191,19 @@ def test_get_meal_by_name(mock_cursor):
     # Simulate that the meal exists (meal = "Pizza")
     mock_cursor.fetchone.return_value = (1, "Pizza", "Italian", 12.0, "LOW", False)
 
-    # Call the function and check the result
     result = get_meal_by_name("Pizza")
 
-    # Expected result based on the simulated fetchone return value
     expected_result = Meal(1, "Pizza", "Italian", 12.0, "LOW")
 
-    # Ensure the result matches the expected output
     assert result == expected_result, f"Expected {expected_result}, got {result}"
 
-    # Ensure the SQL query was executed correctly
     expected_query = normalize_whitespace("SELECT id, meal, cuisine, price, difficulty, deleted FROM meals WHERE meal = ?")
     actual_query = normalize_whitespace(mock_cursor.execute.call_args[0][0])
 
-    # Assert that the SQL query was correct
     assert actual_query == expected_query, "The SQL query did not match the expected structure."
 
-    # Extract the arguments used in the SQL call
     actual_arguments = mock_cursor.execute.call_args[0][1]
 
-    # Assert that the SQL query was executed with the correct arguments
     expected_arguments = ("Pizza",)
     assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
@@ -239,7 +212,6 @@ def test_get_meal_by_name_bad_name(mock_cursor):
     # Simulate that no meal exists for the given ID
     mock_cursor.fetchone.return_value = None
 
-    # Expect a ValueError when the meal is not found
     with pytest.raises(ValueError, match="Meal with name bla not found"):
         get_meal_by_name("bla")
 
@@ -261,7 +233,6 @@ def test_get_leaderboard(mock_cursor):
     # Call get_leaderboard with a valid sort_by parameter ("wins")
     leaderboard = get_leaderboard(sort_by="wins")
 
-    # Expected result based on the mock data
     expected_leaderboard = [
         {'id': 1, 'meal': "Meal A", 'cuisine': "Italian", 'price': 15.0, 'difficulty': "MED", 'battles': 10, 'wins': 8, 'win_pct': 80.0},
         {'id': 2, 'meal': "Meal B", 'cuisine': "Chinese", 'price': 12.0, 'difficulty': "LOW", 'battles': 5, 'wins': 3, 'win_pct': 60.0}
@@ -299,19 +270,14 @@ def test_update_meal_stats_win(mock_cursor):
     meal_id = 1
     update_meal_stats(meal_id, "win")
 
-    # Normalize the expected SQL query
     expected_query = normalize_whitespace("UPDATE meals SET battles = battles + 1, wins = wins + 1 WHERE id = ?")
 
-    # Ensure the SQL query was executed correctly
     actual_query = normalize_whitespace(mock_cursor.execute.call_args_list[1][0][0])
 
-    # Assert that the SQL query was correct
     assert actual_query == expected_query, "The SQL query did not match the expected structure."
 
-    # Extract the arguments used in the SQL call
     actual_arguments = mock_cursor.execute.call_args_list[1][0][1]
 
-    # Assert that the SQL query was executed with the correct arguments (meal ID)
     expected_arguments = (meal_id,)
     assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
@@ -322,23 +288,17 @@ def test_update_meal_stats_lose(mock_cursor):
     # Simulate that the meal exists and is not deleted (id = 1)
     mock_cursor.fetchone.return_value = [False]
 
-    # Call the update_meal_stats function with a sample meal ID and winning the battle
     meal_id = 1
     update_meal_stats(meal_id, "loss")
 
-    # Normalize the expected SQL query
     expected_query = normalize_whitespace("UPDATE meals SET battles = battles + 1 WHERE id = ?")
 
-    # Ensure the SQL query was executed correctly
     actual_query = normalize_whitespace(mock_cursor.execute.call_args_list[1][0][0])
 
-    # Assert that the SQL query was correct
     assert actual_query == expected_query, "The SQL query did not match the expected structure."
 
-    # Extract the arguments used in the SQL call
     actual_arguments = mock_cursor.execute.call_args_list[1][0][1]
 
-    # Assert that the SQL query was executed with the correct arguments (meal ID)
     expected_arguments = (meal_id,)
     assert actual_arguments == expected_arguments, f"The SQL query arguments did not match. Expected {expected_arguments}, got {actual_arguments}."
 
@@ -355,10 +315,8 @@ def test_update_deleted_meal_stats(mock_cursor):
 
 def test_update_not_founded_meal_stats(mock_cursor):
     """Test error when trying to update a non-existent meal."""
-    # Simulate that no meal exists with the given ID
     mock_cursor.fetchone.return_value = None
 
-    # Expect a ValueError when attempting to update a non-existent meal
     with pytest.raises(ValueError, match="Meal with ID 999 not found"):
         delete_meal(999)
 
